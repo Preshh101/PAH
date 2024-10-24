@@ -1,11 +1,45 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>My First GitHub Page</title>
+    <title>Image Upload</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Hello World!</h1>
-    <p>This is my first GitHub Pages website.</p>
+    <div class="upload-container">
+        <input type="file" id="file-input" accept="image/*" style="display: none;">
+        <button id="upload-button" onclick="document.getElementById('file-input').click()">
+            Upload Image
+        </button>
+        <br>
+        <img id="image-preview">
+        <br>
+        <button id="submit-button">Submit</button>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const imagePreview = document.getElementById('image-preview');
+        const submitButton = document.getElementById('submit-button');
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    imagePreview.style.display = 'block';
+                    imagePreview.src = e.target.result;
+                    submitButton.style.display = 'inline-block';
+                }
+                
+                reader.readAsDataURL(file);
+            }
+        });
+
+        submitButton.addEventListener('click', function() {
+            // Add your submit logic here
+            alert('Image submitted!');
+        });
+    </script>
 </body>
 </html>
