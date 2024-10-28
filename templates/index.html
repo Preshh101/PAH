@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Upload</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="upload-container">
+        <input type="file" id="file-input" accept="image/*" style="display: none;">
+        <button id="upload-button" onclick="document.getElementById('file-input').click()">
+            Upload Image
+        </button>
+        <br>
+        <canvas id="image-canvas" style="display: none;"></canvas>
+        <img id="image-preview">
+        <br>
+        <button id="submit-button">Submit</button>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const imagePreview = document.getElementById('image-preview');
+        const submitButton = document.getElementById('submit-button');
+        const canvas = document.getElementById('image-canvas');
+        const ctx = canvas.getContext('2d');
+        const TARGET_SIZE = 1080;
+
+        function resizeImage(originalImage) {
+            let width = originalImage.width;
+            let height = originalImage.height;
+            
+            // Calculate new dimensions while maintaining aspect ratio
+            if (width > height) {
+                if (width > TARGET_SIZE) {
+                    height = height * (TARGET_SIZE / width);
+                    width = TARGET_SIZE;
+                }
+            } else {
+                if (height > TARGET_SIZE) {
+                    width = width * (TARGET_SIZE / height);
+                    height = TARGET_SIZE;
+                }
+            }
+
+            // Set canvas size
+            canvas.width = TARGET_SIZE;
+            canvas.height = TARGET_SIZE;
+
+            // Calculate positioning to center the image
+            const xOffset = (TARGET_SIZE - width) / 2;
+            const yOffset = (TARGET_SIZE - height) / 2;
+
+            // Fill canvas with white background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, TARGET_SIZE, TARGET_SIZE);
+
+            // Draw image centered on canvas
+            ctx.drawImage(originalImage, xOffset, yOffset, width, height);
+            
+            // Convert to base64 string
+            return canvas.toDataURL('image/jpeg', 0.9);
+        }
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const resizedImageUrl = resizeImage(img);
+                        imagePreview.style.display = 'block';
+                        imagePreview.src = resizedImageUrl;
+                        submitButton.style.display = 'inline-block';
+                    }
+                    img.src = e.target.result;
+                }
+                
+                reader.readAsDataURL(file);
+            }
+        });
+
+        submitButton.addEventListener('click', async function() {
+            const formData = new FormData();
+            const imageData = imagePreview.src;
+            
+            // Convert base64 to blob
+            const response = await fetch(imageData);
+            const blob = await response.blob();
+            formData.append('image', blob, 'image.jpg');
+
+            try {
+                const response = await fetch('/apply-filter', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const resultImage = await response.blob();
+                    imagePreview.src = URL.createObjectURL(resultImage);
+                } else {
+                    alert('Error processing image');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error processing image');
+            }
+        });
+    </script>
+</body>
+</html>
